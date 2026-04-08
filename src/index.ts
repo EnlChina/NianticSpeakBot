@@ -15,7 +15,6 @@ export default {
       ]);
     });
 
-    const handleUpdate = webhookCallback(bot, "cloudflare-mod");
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/set-webhook") {
@@ -33,15 +32,65 @@ export default {
       }
     }
 
-    if (request.method === "POST") {
+    if (request.method === "POST" && url.pathname === "/webhook") {
+      console.log("telegram webhook received");
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
       try {
-        return await handleUpdate(request);
-      } catch (err) {
-        console.error("Error handling update:", err);
-        return new Response("Internal Server Error", { status: 500 });
+        const response = await Promise.race([
+          webhookCallback(bot, "cloudflare-mod")(request),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(
+              () => reject(new Error("Webhook processing exceeded 8 second timeout")),
+              8000,
+            );
+          }),
+        ]);
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+          timeoutId = undefined;
+        }
+        console.log("Webhook processed successfully");
+        return response as Response;
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorStack = error instanceof Error ? error.stack : "";
+        console.error("Error handling webhook:", errorMessage, errorStack);
+
+        if (errorMessage.includes("timeout")) {
+          return new Response(
+            JSON.stringify({
+              error: "Request timeout",
+              message: "Request processing timed out, please retry later.",
+            }),
+            {
+              status: 408,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            error: "Webhook processing failed",
+            message: "An unexpected error occurred while handling the webhook.",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      } finally {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
       }
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("Hello from YsProject!", {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
   },
 };
