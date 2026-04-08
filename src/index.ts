@@ -34,11 +34,12 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/webhook") {
       console.log("telegram webhook received");
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
       try {
         const response = await Promise.race([
           webhookCallback(bot, "cloudflare-mod")(request),
           new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error("timed out")), 8000);
+            timeoutId = setTimeout(() => reject(new Error("timed out")), 8000);
           }),
         ]);
         console.log("Webhook processed successfully");
@@ -46,13 +47,13 @@ export default {
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         const errorStack = error instanceof Error ? error.stack : "";
-        console.error("处理webhook时出错:", errorMessage, errorStack);
+        console.error("Error handling webhook:", errorMessage, errorStack);
 
         if (errorMessage.includes("timed out")) {
           return new Response(
             JSON.stringify({
               error: "Request timeout",
-              message: "请求处理超时，请稍后重试",
+              message: "Request processing timed out, please retry later.",
             }),
             {
               status: 408,
@@ -62,6 +63,10 @@ export default {
         }
 
         return new Response("Error", { status: 500 });
+      } finally {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
       }
     }
 
