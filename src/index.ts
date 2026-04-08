@@ -11,7 +11,7 @@ export default {
 
     bot.on("inline_query", async (ctx) => {
       const query = ctx.inlineQuery.query;
-      const safeQuery = query || "…";
+      const safeQuery = query || "...";
       const entities: { type: "spoiler"; offset: number; length: number }[] = [];
       let offset = 0;
       let spoilerStart = -1;
