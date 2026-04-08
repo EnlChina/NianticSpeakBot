@@ -11,7 +11,12 @@ export default {
 
     bot.on("inline_query", async (ctx) => {
       const query = ctx.inlineQuery.query;
-      const safeQuery = query || "...";
+      if (!query) {
+        await ctx.answerInlineQuery([InlineQueryResultBuilder.article("0", "…").text("…")]);
+        return;
+      }
+
+      const safeQuery = query;
       const entities: { type: "spoiler"; offset: number; length: number }[] = [];
       let offset = 0;
       let spoilerStart = -1;
@@ -19,7 +24,7 @@ export default {
 
       for (const char of safeQuery) {
         const codepoint = char.codePointAt(0);
-        const charLength = codepoint !== undefined && codepoint > 0xffff ? 2 : 1;
+        const charLength = char.length;
         const isAllowed = codepoint !== undefined && cmapJa.has(codepoint);
 
         if (isAllowed) {
@@ -43,9 +48,7 @@ export default {
       }
 
       await ctx.answerInlineQuery([
-        InlineQueryResultBuilder.article("0", safeQuery).text(safeQuery, {
-          entities: entities.length > 0 ? entities : undefined,
-        }),
+        InlineQueryResultBuilder.article("0", safeQuery).text(safeQuery, { entities }),
       ]);
     });
 
