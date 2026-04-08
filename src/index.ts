@@ -16,6 +16,22 @@ export default {
     });
 
     const handleUpdate = webhookCallback(bot, "cloudflare-mod");
+    const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname === "/set-webhook") {
+      const webhookUrl = `${url.origin}/webhook`;
+      try {
+        const result = await bot.api.setWebhook(webhookUrl, {
+          allowed_updates: ["message", "callback_query"],
+        });
+        return new Response(JSON.stringify(result), {
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (error: unknown) {
+        console.error("Error setting webhook", error);
+        return new Response("Failed to set webhook", { status: 500 });
+      }
+    }
 
     if (request.method === "POST") {
       try {
