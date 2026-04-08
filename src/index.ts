@@ -1,4 +1,5 @@
 import { Bot, InlineQueryResultBuilder, webhookCallback } from "grammy";
+import cmapJa from "./cmap_ja";
 
 export interface Env {
   BOT_TOKEN: string;
@@ -10,8 +11,41 @@ export default {
 
     bot.on("inline_query", async (ctx) => {
       const query = ctx.inlineQuery.query;
+      const safeQuery = query || "…";
+      const entities: { type: "spoiler"; offset: number; length: number }[] = [];
+      let offset = 0;
+      let spoilerStart = -1;
+      let spoilerLength = 0;
+
+      for (const char of safeQuery) {
+        const codepoint = char.codePointAt(0);
+        const charLength = char.length;
+        const isAllowed = codepoint !== undefined && cmapJa.has(codepoint);
+
+        if (isAllowed) {
+          if (spoilerStart >= 0) {
+            entities.push({ type: "spoiler", offset: spoilerStart, length: spoilerLength });
+            spoilerStart = -1;
+            spoilerLength = 0;
+          }
+        } else {
+          if (spoilerStart < 0) {
+            spoilerStart = offset;
+          }
+          spoilerLength += charLength;
+        }
+
+        offset += charLength;
+      }
+
+      if (spoilerStart >= 0) {
+        entities.push({ type: "spoiler", offset: spoilerStart, length: spoilerLength });
+      }
+
       await ctx.answerInlineQuery([
-        InlineQueryResultBuilder.article("0", query || "…").text(query || "…"),
+        InlineQueryResultBuilder.article("0", safeQuery).text(safeQuery, {
+          entities: entities.length > 0 ? entities : undefined,
+        }),
       ]);
     });
 
