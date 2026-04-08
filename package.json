@@ -1,0 +1,19 @@
+{
+  "name": "niantic-speak-bot",
+  "version": "0.0.1",
+  "description": "A Telegram inline bot that speaks like Ingress on iOS that eats some Chinese characters",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "grammy": "^1.42.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260408.1",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.81.0"
+  }
+}
