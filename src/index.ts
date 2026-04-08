@@ -16,14 +16,12 @@ export default {
         return;
       }
 
-      const inlineText = query;
       const entities: { type: "spoiler"; offset: number; length: number }[] = [];
-      let offset = 0;
       let spoilerStart = -1;
       let spoilerLength = 0;
 
-      for (const char of inlineText) {
-        const codepoint = char.codePointAt(0);
+      for (let offset = 0; offset < query.length; ) {
+        const codepoint = query.codePointAt(offset);
         const charLength = codepoint !== undefined && codepoint > 0xffff ? 2 : 1;
         const isAllowed = codepoint !== undefined && cmapJa.has(codepoint);
 
@@ -48,7 +46,7 @@ export default {
       }
 
       await ctx.answerInlineQuery([
-        InlineQueryResultBuilder.article("0", inlineText).text(inlineText, { entities }),
+        InlineQueryResultBuilder.article("0", query).text(query, { entities }),
       ]);
     });
 
