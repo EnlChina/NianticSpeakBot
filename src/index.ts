@@ -15,7 +15,6 @@ export default {
       ]);
     });
 
-    const handleUpdate = webhookCallback(bot, "cloudflare-mod");
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/set-webhook") {
@@ -33,15 +32,44 @@ export default {
       }
     }
 
-    if (request.method === "POST") {
+    if (request.method === "POST" && url.pathname === "/webhook") {
+      console.log("telegram webhook received");
       try {
-        return await handleUpdate(request);
-      } catch (err) {
-        console.error("Error handling update:", err);
-        return new Response("Internal Server Error", { status: 500 });
+        const response = await Promise.race([
+          webhookCallback(bot, "cloudflare-mod")(request),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error("timed out")), 8000);
+          }),
+        ]);
+        console.log("Webhook processed successfully");
+        return response as Response;
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorStack = error instanceof Error ? error.stack : "";
+        console.error("处理webhook时出错:", errorMessage, errorStack);
+
+        if (errorMessage.includes("timed out")) {
+          return new Response(
+            JSON.stringify({
+              error: "Request timeout",
+              message: "请求处理超时，请稍后重试",
+            }),
+            {
+              status: 408,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        }
+
+        return new Response("Error", { status: 500 });
       }
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("Hello from YsProject!", {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
   },
 };
