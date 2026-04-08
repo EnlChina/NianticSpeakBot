@@ -5,3 +5,11 @@ compatibility_flags = ["nodejs_compat"]
 
 [secrets]
 required = [ "BOT_TOKEN" ]
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
