@@ -39,9 +39,16 @@ export default {
         const response = await Promise.race([
           webhookCallback(bot, "cloudflare-mod")(request),
           new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error("timed out")), 8000);
+            timeoutId = setTimeout(
+              () => reject(new Error("Webhook processing exceeded 8 second timeout")),
+              8000,
+            );
           }),
         ]);
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+          timeoutId = undefined;
+        }
         console.log("Webhook processed successfully");
         return response as Response;
       } catch (error: unknown) {
@@ -49,7 +56,7 @@ export default {
         const errorStack = error instanceof Error ? error.stack : "";
         console.error("Error handling webhook:", errorMessage, errorStack);
 
-        if (errorMessage.includes("timed out")) {
+        if (errorMessage.includes("timeout")) {
           return new Response(
             JSON.stringify({
               error: "Request timeout",
@@ -62,7 +69,16 @@ export default {
           );
         }
 
-        return new Response("Error", { status: 500 });
+        return new Response(
+          JSON.stringify({
+            error: "Webhook processing failed",
+            message: "An unexpected error occurred while handling the webhook.",
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
       } finally {
         if (timeoutId !== undefined) {
           clearTimeout(timeoutId);
