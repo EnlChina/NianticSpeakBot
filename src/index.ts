@@ -19,13 +19,16 @@ export default {
       const entities: { type: "spoiler"; offset: number; length: number }[] = [];
       let spoilerStart = -1;
       let spoilerLength = 0;
+      let filteredQuery = "";
 
       for (let offset = 0; offset < query.length; ) {
         const codepoint = query.codePointAt(offset);
         const charLength = codepoint !== undefined && codepoint > 0xffff ? 2 : 1;
         const isAllowed = codepoint !== undefined && cmapJa.has(codepoint);
+        const char = query.slice(offset, offset + charLength);
 
         if (isAllowed) {
+          filteredQuery += char;
           if (spoilerStart >= 0) {
             entities.push({ type: "spoiler", offset: spoilerStart, length: spoilerLength });
             spoilerStart = -1;
@@ -46,7 +49,8 @@ export default {
       }
 
       await ctx.answerInlineQuery([
-        InlineQueryResultBuilder.article("0", query).text(query, { entities }),
+        InlineQueryResultBuilder.article("0", "1) Send with Spoiler").text(query, { entities }),
+        InlineQueryResultBuilder.article("1", "2) Send without Spoiler").text(filteredQuery || "…"),
       ]);
     });
 
