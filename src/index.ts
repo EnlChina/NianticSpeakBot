@@ -60,7 +60,7 @@ export default {
 
     bot.on("inline_query", async (ctx) => {
       const query = ctx.inlineQuery.query;
-      if (!query) {
+      if (!query.trim()) {
         await ctx.answerInlineQuery([InlineQueryResultBuilder.article("0", "…").text("…")]);
         return;
       }
