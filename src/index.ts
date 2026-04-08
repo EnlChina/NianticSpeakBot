@@ -9,26 +9,20 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const bot = new Bot(env.BOT_TOKEN);
 
-    bot.on("inline_query", async (ctx) => {
-      const query = ctx.inlineQuery.query;
-      if (!query) {
-        await ctx.answerInlineQuery([InlineQueryResultBuilder.article("0", "…").text("…")]);
-        return;
-      }
-
+    const getSpoilerEntitiesAndFilteredText = (text: string) => {
       const entities: { type: "spoiler"; offset: number; length: number }[] = [];
       let spoilerStart = -1;
       let spoilerLength = 0;
-      let filteredQuery = "";
+      let filteredText = "";
 
-      for (let offset = 0; offset < query.length; ) {
-        const codepoint = query.codePointAt(offset);
+      for (let offset = 0; offset < text.length; ) {
+        const codepoint = text.codePointAt(offset);
         const charLength = codepoint !== undefined && codepoint > 0xffff ? 2 : 1;
         const isAllowed = codepoint !== undefined && cmapJa.has(codepoint);
-        const char = query.slice(offset, offset + charLength);
+        const char = text.slice(offset, offset + charLength);
 
         if (isAllowed) {
-          filteredQuery += char;
+          filteredText += char;
           if (spoilerStart >= 0) {
             entities.push({ type: "spoiler", offset: spoilerStart, length: spoilerLength });
             spoilerStart = -1;
@@ -48,10 +42,37 @@ export default {
         entities.push({ type: "spoiler", offset: spoilerStart, length: spoilerLength });
       }
 
+      return { entities, filteredText };
+    };
+
+    bot.on("inline_query", async (ctx) => {
+      const query = ctx.inlineQuery.query;
+      if (!query) {
+        await ctx.answerInlineQuery([InlineQueryResultBuilder.article("0", "…").text("…")]);
+        return;
+      }
+
+      const { entities, filteredText } = getSpoilerEntitiesAndFilteredText(query);
+
       await ctx.answerInlineQuery([
         InlineQueryResultBuilder.article("0", "1) Send with Spoiler").text(query, { entities }),
-        InlineQueryResultBuilder.article("1", "2) Send without Spoiler").text(filteredQuery || "…"),
+        InlineQueryResultBuilder.article("1", "2) Send without Spoiler").text(filteredText || "…"),
       ]);
+    });
+
+    bot.on("message:text", async (ctx) => {
+      if (ctx.chat.type !== "private") {
+        return;
+      }
+
+      const text = ctx.message.text;
+      const hasCommandEntity = ctx.message.entities?.some((entity) => entity.type === "bot_command") ?? false;
+      if (hasCommandEntity || text.trimStart().startsWith("/")) {
+        return;
+      }
+
+      const { entities } = getSpoilerEntitiesAndFilteredText(text);
+      await ctx.reply(text, { entities });
     });
 
     const url = new URL(request.url);
