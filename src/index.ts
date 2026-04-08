@@ -56,7 +56,7 @@ export default {
       const webhookUrl = `${url.origin}/webhook`;
       try {
         const result = await bot.api.setWebhook(webhookUrl, {
-          allowed_updates: ["message", "callback_query"],
+          allowed_updates: ["message", "callback_query", "inline_query"],
         });
         return new Response(JSON.stringify(result), {
           headers: { "Content-Type": "application/json" },
