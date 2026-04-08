@@ -19,7 +19,7 @@ export default {
 
       for (const char of safeQuery) {
         const codepoint = char.codePointAt(0);
-        const charLength = char.length;
+        const charLength = codepoint !== undefined && codepoint > 0xffff ? 2 : 1;
         const isAllowed = codepoint !== undefined && cmapJa.has(codepoint);
 
         if (isAllowed) {
