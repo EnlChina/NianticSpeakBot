@@ -86,7 +86,7 @@ export default {
       const { entities, filteredText } = getSpoilerEntitiesAndFilteredText(query);
       const tooManyEntities = entities.length > TELEGRAM_MAX_ENTITIES;
       const spoilerTitle = tooManyEntities
-        ? "1) Send with Spoiler (Too many spoiler entities: only first 100 will be sent)"
+        ? "1) Send with Spoiler (Too many spoiler entities: only first 100 spoilers and text will be sent)"
         : "1) Send with Spoiler";
 
       await ctx.answerInlineQuery([
