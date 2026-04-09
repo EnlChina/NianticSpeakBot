@@ -5,6 +5,8 @@ export interface Env {
   BOT_TOKEN: string;
 }
 
+const TELEGRAM_MAX_ENTITIES = 100;
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const bot = new Bot(env.BOT_TOKEN);
@@ -58,6 +60,22 @@ export default {
       return { entities, filteredText };
     };
 
+    const truncateTextAndEntitiesByLimit = (
+      text: string,
+      entities: { type: "spoiler"; offset: number; length: number }[],
+      limit: number,
+    ) => {
+      if (entities.length <= limit) {
+        return { text, entities, truncated: false };
+      }
+
+      const limitedEntities = entities.slice(0, limit);
+      const lastEntity = limitedEntities[limitedEntities.length - 1];
+      const textEndOffset = lastEntity.offset + lastEntity.length;
+      const truncatedText = text.slice(0, textEndOffset);
+      return { text: truncatedText, entities: limitedEntities, truncated: true };
+    };
+
     bot.on("inline_query", async (ctx) => {
       const query = ctx.inlineQuery.query;
       if (!query.trim()) {
@@ -66,9 +84,15 @@ export default {
       }
 
       const { entities, filteredText } = getSpoilerEntitiesAndFilteredText(query);
+      const tooManyEntities = entities.length > TELEGRAM_MAX_ENTITIES;
+      const spoilerTitle = tooManyEntities
+        ? "1) Send with Spoiler (Message too long, latter spoilers may be missing)"
+        : "1) Send with Spoiler";
 
       await ctx.answerInlineQuery([
-        InlineQueryResultBuilder.article("0", "1) Send with Spoiler").text(query, { entities }),
+        InlineQueryResultBuilder.article("0", spoilerTitle).text(query, {
+          entities: entities.slice(0, TELEGRAM_MAX_ENTITIES),
+        }),
         InlineQueryResultBuilder.article("1", "2) Send without Spoiler").text(filteredText || "…"),
       ]);
     });
@@ -85,7 +109,11 @@ export default {
       }
 
       const { entities } = getSpoilerEntitiesAndFilteredText(text);
-      await ctx.reply(text, { entities });
+      const truncatedResult = truncateTextAndEntitiesByLimit(text, entities, TELEGRAM_MAX_ENTITIES);
+      await ctx.reply(truncatedResult.text, { entities: truncatedResult.entities });
+      if (truncatedResult.truncated) {
+        await ctx.reply("Message is too long to be processed in one round.");
+      }
     });
 
     const url = new URL(request.url);
