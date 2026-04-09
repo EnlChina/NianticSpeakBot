@@ -86,7 +86,7 @@ export default {
       const { entities, filteredText } = getSpoilerEntitiesAndFilteredText(query);
       const tooManyEntities = entities.length > TELEGRAM_MAX_ENTITIES;
       const spoilerTitle = tooManyEntities
-        ? "1) Send with Spoiler (Too many spoilers, later ones will be omitted)"
+        ? "1) Send with Spoiler (Too many spoilers: only first 100 will be sent)"
         : "1) Send with Spoiler";
 
       await ctx.answerInlineQuery([
@@ -113,7 +113,7 @@ export default {
       await ctx.reply(truncatedResult.text, { entities: truncatedResult.entities });
       if (truncatedResult.truncated) {
         await ctx.reply(
-          "Your message was truncated because it contains too many spoilers. Only the first 100 spoilers were applied.",
+          "Your message exceeded Telegram's 100-spoiler limit. The message was truncated to apply only the first 100 spoilers.",
         );
       }
     });
