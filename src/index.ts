@@ -1,4 +1,4 @@
-import { Bot, InlineQueryResultBuilder, webhookCallback } from "grammy";
+import { Bot, GrammyError, HttpError, InlineQueryResultBuilder, webhookCallback } from "grammy";
 import cmapJa from "./cmap_ja";
 
 export interface Env {
