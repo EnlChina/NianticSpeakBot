@@ -19,7 +19,7 @@ python3 -m pip install fonttools
 Example:
 
 ```bash
-cp /path/to/NotoSansJP-Regular.ttf /home/runner/work/NianticSpeakBot/NianticSpeakBot/
+cp /path/to/NotoSansJP-Regular.ttf ./
 ```
 
 ## 2) Generate `src/cmap_ja.ts`
