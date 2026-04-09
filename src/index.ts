@@ -86,7 +86,7 @@ export default {
       const { entities, filteredText } = getSpoilerEntitiesAndFilteredText(query);
       const tooManyEntities = entities.length > TELEGRAM_MAX_ENTITIES;
       const spoilerTitle = tooManyEntities
-        ? "1) Send with Spoiler (Message too long, later spoilers may be missing)"
+        ? "1) Send with Spoiler (Too many spoilers, later ones will be omitted)"
         : "1) Send with Spoiler";
 
       await ctx.answerInlineQuery([
@@ -112,7 +112,9 @@ export default {
       const truncatedResult = truncateTextAndEntitiesByLimit(text, entities, TELEGRAM_MAX_ENTITIES);
       await ctx.reply(truncatedResult.text, { entities: truncatedResult.entities });
       if (truncatedResult.truncated) {
-        await ctx.reply("Your message contains too many spoilers. Only the first 100 spoilers were applied.");
+        await ctx.reply(
+          "Your message was truncated because it contains too many spoilers. Only the first 100 spoilers were applied.",
+        );
       }
     });
 
